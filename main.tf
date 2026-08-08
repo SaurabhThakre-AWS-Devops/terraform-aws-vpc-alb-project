@@ -1,38 +1,62 @@
-provider "aws" {
-  alias  = "ap-south-1"
-  region = "ap-south-1"
-}
-
-provider "aws" {
-  alias  = "eu-west-1"
-  region = "eu-west-1"
-}
-
-resource "aws_instance" "example1" {
-  ami           = "ami-0317b0f0a0144b137"
-  instance_type = "t2.micro"
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
 
   tags = {
-    Name = "mumbai-server"
+    Name = "terraform-demo-vpc"
   }
-
-  provider = aws.ap-south-1
 }
 
-resource "aws_instance" "example2" {
-  ami           = "ami-0317b0f0a0144b137"
-  instance_type = "t2.micro"
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "ireland-server"
+    Name = "terraform-demo-igw"
   }
-
-  provider = aws.eu-west-1
 }
 
-output "instance_public_ip" {
-  value = [
-    aws_instance.example1.public_ip,
-    aws_instance.example2.public_ip
-  ]
+resource "aws_subnet" "public_1" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_1_cidr
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "public-subnet-1"
+  }
+}
+
+resource "aws_subnet" "public_2" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_2_cidr
+  availability_zone       = data.aws_availability_zones.available.names[1]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "public-subnet-2"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name = "public-route-table"
+  }
+}
+
+resource "aws_route_table_association" "public_1" {
+  subnet_id      = aws_subnet.public_1.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_2" {
+  subnet_id      = aws_subnet.public_2.id
+  route_table_id = aws_route_table.public.id
 }
