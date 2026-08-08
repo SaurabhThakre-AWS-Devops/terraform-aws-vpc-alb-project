@@ -1,11 +1,22 @@
 terraform {
+  required_version = ">= 1.5.0"
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "6.32.1"
+      version = "~> 6.0"
     }
   }
 }
+
 provider "aws" {
-  region = "ap-south-1"
+  region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project     = "Terraform-VPC-ALB"
+      Environment = "Demo"
+      ManagedBy   = "Terraform"
+    }
+  }
 }
